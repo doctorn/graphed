@@ -64,14 +64,16 @@ function Node(id, name) {
   bin.innerHTML = '<span class="mdi mdi-delete"></span>';
   bin.addEventListener('click', e => {
     if (!connecting) {
-      api.removeNote(active, this.id, () => {
-        overlay.removeChild(this.div);
-        nodes.splice(nodes.indexOf(this), 1);
-        for (var node of nodes) {
-          if (node.neighbours.includes(this))
-            node.neighbours.splice(node.neighbours.indexOf(this), 1);
-        }
-      });
+      if (nodes.length > 1) {
+        api.removeNote(active, this.id, () => {
+          overlay.removeChild(this.div);
+          nodes.splice(nodes.indexOf(this), 1);
+          for (var node of nodes) {
+            if (node.neighbours.includes(this))
+              node.neighbours.splice(node.neighbours.indexOf(this), 1);
+          }
+        });
+      }
     }
   });
   controls.appendChild(bin);
@@ -243,30 +245,42 @@ function getMousePos(target, e) {
   return {x : e.clientX - rect.left, y : e.clientY - rect.top};
 }
 
-function enterWorkspace(workspace) {
-  active = workspace;
-  api.getWorkspace(active, function(notes, connections) {
-    nodes = [];
-    for (var note of notes) {
-      var node = new Node(note.id, note.name);
-      node.setPosition(node.x + Math.random() * 50 - 25,
-                       node.y + Math.random() * 50 - 25);
-      addNode(node);
-    }
-    for (var connection of connections) {
-      for (var node of nodes) {
-        if (node.id === connection.origin) {
-          for (var other of nodes) {
-            if (node !== other && other.id === connection.target) {
-              node.addNeighbour(other);
-              break;
+function enterWorkspace(workspace, name) {
+  if (workspace !== active) {
+    active = workspace;
+    document.getElementById("workspace_name").innerHTML = name;
+    api.getWorkspace(active, function(notes, connections) {
+      for (var node of nodes)
+        overlay.removeChild(node.div);
+      nodes = [];
+      for (var note of notes) {
+        var node = new Node(note.id, note.name);
+        node.setPosition(node.x + Math.random() * 50 - 25,
+                         node.y + Math.random() * 50 - 25);
+        addNode(node);
+      }
+      for (var connection of connections) {
+        for (var node of nodes) {
+          if (node.id === connection.origin) {
+            for (var other of nodes) {
+              if (node !== other && other.id === connection.target) {
+                node.addNeighbour(other);
+                break;
+              }
             }
+            break;
           }
-          break;
         }
       }
-    }
-  });
+    });
+  }
+}
+
+function addWorkspace(id, name) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(name));
+  div.addEventListener('click', function() { enterWorkspace(id, name); });
+  document.getElementById('workspaces').appendChild(div);
 }
 
 $(document).ready(function() {
@@ -340,12 +354,23 @@ $(document).ready(function() {
     grabbed = false;
   });
 
+  document.getElementById('add_workspace').addEventListener('click', () => {
+    var value = document.getElementById('new_workspace_name').value;
+    if (value !== "") {
+      api.createWorkspace(
+          value, id => {api.createNote(id, "", note => {
+                   addWorkspace(id, value);
+                   document.getElementById('new_workspace_name').value = "";
+                 })});
+    }
+  });
+
   api.getWorkspaces(function(workspaces) {
     for (var workspace of workspaces) {
-      var li = document.createElement('li');
-      li.appendChild(document.createTextNode(workspace.name));
-      document.getElementById('workspaces').appendChild(li);
+      addWorkspace(workspace.id, workspace.name);
     }
-    enterWorkspace(workspaces[0].id);
+    if (workspaces.length > 0) {
+      enterWorkspace(workspaces[0].id, workspaces[0].name);
+    }
   });
 });

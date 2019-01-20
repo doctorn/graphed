@@ -4,11 +4,15 @@
     <canvas id="graph">
     </canvas>
     <div id="overlay">
+      <h1 id="workspace_name"></h1>
       <div id="enter_connection_mode" class="button"><span class="mdi mdi-vector-line"></span></div>
       <div id="logout" class="button" onclick="window.location = '/logout';"><span class="mdi mdi-logout"></span></div> 
     </div>
   </div>
   <div id="sidenav">
-    <div id="workspaces"></div>
+    <div id="workspaces">
+    </div>
+    <input id="new_workspace_name" type="text" placeholder="New Workspace"/>
+    <div id="add_workspace" class="button"><span class="mdi mdi-plus"></span></div>
   </div>
 {% endblock %}
