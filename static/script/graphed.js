@@ -360,6 +360,7 @@ $(document).ready(function() {
       api.createWorkspace(
           value, id => {api.createNote(id, "", note => {
                    addWorkspace(id, value);
+                   enterWorkspace(id, value);
                    document.getElementById('new_workspace_name').value = "";
                  })});
     }
